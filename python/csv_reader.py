@@ -40,10 +40,9 @@ def csv():
     new_csv.append(data)
 
     for i in range(len(df)):
-
+        if j < 1:
+            continue
         for j in range(len(df.columns)):
-            if j < 1:
-                continue
             filera = []
             value = f"{df.iloc[i, j]}"
             str = splitUrl(value)
