@@ -40,14 +40,16 @@ def csv():
     new_csv.append(data)
 
     for i in range(len(df)):
-        if j < 1:
+        if i < 1:
             continue
         for j in range(len(df.columns)):
             filera = []
             value = f"{df.iloc[i, j]}"
             str = splitUrl(value)
-            for s in range(len(data) - 1):
-                filera.append(str[s])
+            for k, s in enumerate(str):
+                if k < len(data) - 1:
+                    break
+                filera.append(s)
             filera.append(value)
             new_csv.append(filera)
 
