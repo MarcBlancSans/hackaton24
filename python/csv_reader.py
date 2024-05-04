@@ -34,8 +34,6 @@ def download_image(url, filename):
 def csv():
 
     df = pd.read_csv('inditex.csv')
-    fila = df.iloc[2]
-    row = fila.iloc[0]  
     #setting the new columns
     new_csv = []
     data = ['year', 'season', 'product type', 'section', 'url']
