@@ -64,6 +64,7 @@ def compara(url1, url2):
     if(img1!=None and img2!=None):
         emb1 = getEmbedingsImage(img1)
         emb2 = getEmbedingsImage(img2)
+        print(emb1)
         print(compute_similarity(emb1,emb2))
 
 

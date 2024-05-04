@@ -30,9 +30,40 @@ def eliminar_urls_repetits(csv_input, csv_output):
                 else:
                     row_sense_buides[i] = ""  # Substituïm les URLs repetides per una cadena buida
             writer.writerow(row_sense_buides)  # Escrivim la fila amb les URLs repetides eliminades
-
+            
 eliminar_urls_repetits('inditex.csv', 'inditex_nou.csv')
 
+#get the data of the URL from the csv with path 'csvPath', including the URL itself the identification and the column of the url in the csv
+def getDataURL(csvPath, startColumn, numURLs):
+    urlsCount = 0
+    df = pd.read_csv(csvPath)
+    data = {}
+
+    for i in range(len(df)):
+        if i < startColumn:
+            continue
+        for j in range(len(df.columns)):
+            if (urlsCount > numURLs):
+                break
+            url = f"{df.iloc[i, j]}"
+            if url == "":
+                continue
+            else:
+                urlsCount += 1
+                row = []
+                row.append(i)
+                row.append(url)
+                if i in data:
+                    print("ERROR")
+                data[i] = row
+                break
+    
+    return data
+
+data = getDataURL('inditex_nou.csv', 2, 50)
+print(data)
+
+'''
     #setting the new columns
 df = pd.read_csv('inditex_nou.csv')
 new_csv = []
@@ -60,3 +91,4 @@ df.to_csv(file_name, index=False)
     #df_without_dup = remove_duplicates(df)
     #df_without_dup.to_csv('inditex_nodup.csv', index=False)
 print("CSV file created successfully:", file_name)
+'''
