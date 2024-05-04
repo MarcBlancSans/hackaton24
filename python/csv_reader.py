@@ -29,14 +29,45 @@ def download_image(url, filename):
     else:
         print(f"Failed to download image from {url}")
 
+import numpy as np
+
+def remove_duplicates(df):
+    duplicated_mask = df.duplicated(subset=df.columns[4], keep='first')
+    
+    # Combinar la máscara de duplicados con una máscara que identifique filas con valores NaN en la columna 'year'
+    nan_mask = df[df.columns[0]].isna()
+    final_mask = duplicated_mask & ~nan_mask
+    
+    # Cambiar los valores de las filas duplicadas (excepto NaN) en la columna 'url' a NaN
+    df.loc[final_mask, df.columns[4]] = np.nan
+
+
+    return df
+
+
 
 #build one time the new csv
 def csv():
 
     df = pd.read_csv('inditex.csv')
+    for index, row in df.iterrows():
+    # Crear una llista per emmagatzemar els enllaços únics
+        unique_links = []
+    # Iterar a través dels enllaços de la fila
+        for link in row.dropna():
+        # Afegir l'enllaç a la llista si encara no està present
+            if link not in unique_links:
+                unique_links.append(link)
+    # Assignar els enllaços únics a la fila actual
+        df.loc[index] = unique_links
+
+    # Guardar el DataFrame modificat com a nou CSV
+    df.to_csv("inditex_nodup.csv", index=False)
+
+
     #setting the new columns
     new_csv = []
-    data = ['year', 'season', 'product type', 'section', 'url']
+    data = ['year', 'season', 'product_type', 'section', 'url']
     new_csv.append(data)
 
     for i in range(len(df)):
@@ -47,7 +78,7 @@ def csv():
             value = f"{df.iloc[i, j]}"
             str = splitUrl(value)
             for k, s in enumerate(str):
-                if k < len(data) - 1:
+                if k > len(data) - 2:
                     break
                 filera.append(s)
             filera.append(value)
@@ -57,6 +88,9 @@ def csv():
     df = pd.DataFrame(new_csv)
     df.to_csv(file_name, index=False)
 
+        # Llama a remove_duplicates después de crear el DataFrame desde el archivo CSV
+    #df_without_dup = remove_duplicates(df)
+    #df_without_dup.to_csv('inditex_nodup.csv', index=False)
     print("CSV file created successfully:", file_name)
 
 def main():
