@@ -47,7 +47,7 @@ def csv():
             value = f"{df.iloc[i, j]}"
             str = splitUrl(value)
             for k, s in enumerate(str):
-                if k < len(data) - 1:
+                if k > len(data) - 1:
                     break
                 filera.append(s)
             filera.append(value)
