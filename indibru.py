@@ -3,8 +3,9 @@ from PIL import Image
 from io import BytesIO
 import requests
 from datasets import load_dataset
+import faiss
 import torch
-
+import numpy as np
 # Selecciona el dispositiu
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -15,19 +16,20 @@ tokenizer = ViTImageProcessor.from_pretrained('google/vit-base-patch16-224-in21k
 model = ViTModel.from_pretrained('google/vit-base-patch16-224-in21k').to(device)
 
 url = 'https://static.zara.net/photos///2024/V/0/3/p/0208/600/620/2/w/2048/0208600620_6_1_1.jpg?ts=1700650087558'
-
+'''
 img = None
 try:
     response = requests.get(url)
     img = Image.open(BytesIO(response.content)).convert("RGB")
 except Exception as e:
     print(f"Error loading image {url}: {e}")
+    '''
 
-encoding = tokenizer(img, return_tensors="pt")
+#encoding = tokenizer(img, return_tensors="pt")
 #print(encoding)
 
-pt_outputs = model(**encoding)
-last_hidden_states = pt_outputs.last_hidden_state
+#pt_outputs = model(**encoding)
+#last_hidden_states = pt_outputs.last_hidden_state
 
 #print(pt_outputs)
 #print(last_hidden_states)
@@ -47,14 +49,14 @@ def getImage(url):
         response = requests.get(url)
         img = Image.open(BytesIO(response.content)).convert("RGB")
     except Exception as e:
-        print(f"Error loading image {url1}: {e}")
+        print(f"Error loading image {url}: {e}")
     return img
 
 def getEmbedingsImage(img):
     encoding = tokenizer(img, return_tensors="pt")
     with torch.no_grad():
         pt_outputs1 = model(**encoding)
-    embeding = pt_outputs1.last_hidden_state
+    embeding = pt_outputs1.last_hidden_state.squeeze(0)
     return embeding
 
 def compara(url1, url2):
@@ -66,37 +68,42 @@ def compara(url1, url2):
         emb2 = getEmbedingsImage(img2)
         print(compute_similarity(emb1,emb2))
 
-'''
-def fetch_similar(image, top_k=5):
-    """Fetches the `top_k` similar images with `image` as the query."""
-    # Prepare the input query image for embedding computation.
-    image_transformed = getEmbedingsImage(getImage(image))
+def find_similar_embeddings(index, emb, k=2):
+    D, I = index.search(emb, k)
+    return D, I
 
-    new_batch = {"pixel_values": image_transformed.to(device)}
+# Get the embeddings for a set of URLs
+urls = [
+    'https://static.zara.net/photos///2024/V/0/2/p/0679/416/251/2/w/2048/0679416251_6_2_1.jpg?ts=1714473877883',
+    'https://static.zara.net/photos///2024/V/0/1/p/4786/055/802/2/w/2048/4786055802_3_1_1.jpg?ts=1712743908341',
+    'https://static.zara.net/photos///2024/V/0/1/p/2287/595/800/3/w/2048/2287595800_2_1_1.jpg?ts=1711529252148'
+    'https://static.zara.net/photos///2023/I/0/3/p/0039/678/800/2/w/2048/0039678800_3_1_1.jpg?ts=1692625464746'
+    'https://static.zara.net/photos///2023/V/0/3/p/5507/600/704/2/w/2048/5507600704_6_2_1.jpg?ts=1671119880202'
+]
 
-    # Comute the embedding.
-    with torch.no_grad():
-        query_embeddings = model(**new_batch).last_hidden_state[:, 0].cpu()
+embeddings = []
+for url in urls:
+    img = getImage(url)
+    if img is not None:
+        embeddings.append(getEmbedingsImage(img).cpu().numpy())
 
-    # Compute similarity scores with all the candidate images at one go.
-    # We also create a mapping between the candidate image identifiers
-    # and their similarity scores with the query image.
-    sim_scores = compute_scores(all_candidate_embeddings, query_embeddings)
-    similarity_mapping = dict(zip(candidate_ids, sim_scores))
- 
-    # Sort the mapping dictionary and return `top_k` candidates.
-    similarity_mapping_sorted = dict(
-        sorted(similarity_mapping.items(), key=lambda x: x[1], reverse=True)
-    )
-    id_entries = list(similarity_mapping_sorted.keys())[:top_k]
+# Convert embeddings to numpy array
+embeddings_np = np.concatenate(embeddings, axis=0)
 
-    ids = list(map(lambda x: int(x.split("_")[0]), id_entries))
+# Create the FAISS index
+d = embeddings_np.shape[1]  # size of the vectors
+index = faiss.IndexFlatL2(d)  # build the index
+index.add(embeddings_np)  # add vectors to the index
 
-    return ids, label
-'''
+# Find the closest embeddings for a given image
+given_url = 'https://static.zara.net/photos///2024/V/0/3/p/0208/600/620/2/w/2048/0208600620_6_1_1.jpg?ts=1700650087558'
+given_image = getImage(given_url)
+given_emb = getEmbedingsImage(given_image).cpu().numpy()
 
-url1 = 'https://static.zara.net/photos///2024/V/0/2/p/0679/416/251/2/w/2048/0679416251_6_2_1.jpg?ts=1714473877883'
-url2 = 'https://static.zara.net/photos///2024/V/0/2/p/0679/416/251/2/w/2048/0679416251_3_1_1.jpg?ts=1714473877592'
-url3 = 'https://static.zara.net/photos///2024/V/0/1/p/4786/055/802/2/w/2048/4786055802_3_1_1.jpg?ts=1712743908341'
+# Compute similarities
+D, I = find_similar_embeddings(index, given_emb, k=1)
+print(f"Distances: {D}\nIndices: {I}")
 
-compara(url1,url1)
+# Output the URLs of the similar images
+similar_urls = [urls[i] for i in I.flatten()]  # I.flatten() converteix la matriu a un array 1D
+print(f"Similar URLs: {similar_urls}")
