@@ -1,0 +1,6 @@
+sudo apt install python3-pip
+pip install pandas
+
+nano ~/.bashrc
+export PATH="$HOME/.local/bin:$PATH"
+source ~/.bashrc
