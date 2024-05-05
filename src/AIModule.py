@@ -25,5 +25,4 @@ class AIModule:
         except Exception as e:
             print(f"Error loading image {url}: {e}")
         return img
-
-    #def generateEmbeddings():
+        

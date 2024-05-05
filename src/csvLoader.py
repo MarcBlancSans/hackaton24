@@ -52,7 +52,4 @@ class URLProcessor:
         
         return data
 
-    #@staticmethod
-    #get the data of the URL from the csv with path 'csvPath', including the URL itself the identification and the column of the url in the csv
-    #def createCSV(csvPath, csv):
         

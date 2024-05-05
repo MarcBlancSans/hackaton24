@@ -1,22 +1,26 @@
 from csvLoader import URLProcessor
 from FaissLoader import FaissLoader
-import random
 from flask import Flask
 import flask
 
-def getSimilars(i):
-    setID = URLProcessor.getDataURL("../data/inditex_nou.csv", i, 100)
-    faiss_loader = FaissLoader()
-    setURL = faiss_loader.cargar_faiss(setID)
+
+faiss_loader = FaissLoader()
+faiss_loader.loadEmbeddings(2,10000)
+print("JA")
+
+def getSimilars():
+    #setID = URLProcessor.getDataURL("../data/inditex_nou.csv", i, 100)
+    setURL = faiss_loader.cargar_faiss()
     return setURL
+
+
 
 
 app = Flask(__name__)
 
 @app.route("/members")
 def members():
-    i = random.randint(3, 1000)
-    setURLs = getSimilars(i)
+    setURLs = getSimilars()
     print(setURLs)
     response = flask.jsonify({"members": setURLs})
     response.headers.add('Access-Control-Allow-Origin', '*')
