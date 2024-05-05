@@ -23,7 +23,9 @@ Aquest projecte utilitza el model ViT de Hugging Face per generar imatges que s�
 - Node.js 14 o superior
 - npm (o yarn)
 - Hugging Face Transformers
-- OpenCV
+- PyTorch
+- Pillow
+- Faiss
 
 ## Instal·lació
 
