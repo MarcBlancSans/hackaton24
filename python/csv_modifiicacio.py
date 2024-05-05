@@ -63,32 +63,3 @@ def getDataURL(csvPath, startColumn, numURLs):
 data = getDataURL('inditex_nou.csv', 2, 50)
 print(data)
 
-'''
-    #setting the new columns
-df = pd.read_csv('inditex_nou.csv')
-new_csv = []
-data = ['year', 'season', 'product_type', 'section', 'url']
-new_csv.append(data)
-for i in range(len(df)):
-    if i < 1:
-        continue
-    for j in range(len(df.columns)):
-        filera = []
-        value = f"{df.iloc[i, j]}"
-        str = splitUrl(value)
-        for k, s in enumerate(str):
-            if k > len(data) - 2:
-                break
-            filera.append(s)
-        filera.append(value)
-        new_csv.append(filera)
-
-file_name = 'data.csv'
-df = pd.DataFrame(new_csv)
-df.to_csv(file_name, index=False)
-
-        # Llama a remove_duplicates después de crear el DataFrame desde el archivo CSV
-    #df_without_dup = remove_duplicates(df)
-    #df_without_dup.to_csv('inditex_nodup.csv', index=False)
-print("CSV file created successfully:", file_name)
-'''

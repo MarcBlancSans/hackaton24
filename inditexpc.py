@@ -1,9 +1,39 @@
-from transformers import ViTImageProcessor, ViTForImageClassification, ViTModel
+from transformers import ViTImageProcessor, ViTModel
+from datasets import load_dataset
 from PIL import Image
 from io import BytesIO
+import pandas as pd
+import numpy as np
 import requests
-from datasets import load_dataset
 import torch
+import faiss
+
+
+#get the data of the URL from the csv with path 'csvPath', including the URL itself the identification and the column of the url in the csv
+def getDataURL(csvPath, startColumn, numURLs):
+    urlsCount = 0
+    df = pd.read_csv(csvPath)
+    data = {}
+
+    for i in range(len(df)):
+        if i < startColumn:
+            continue
+        for j in range(len(df.columns)):
+            if (urlsCount > numURLs):
+                break
+            url = f"{df.iloc[i, j]}"
+            if url == "":
+                continue
+            else:
+                urlsCount += 1
+
+                row = url
+                if i in data:
+                    print("ERROR")
+                data[i] = row
+                break
+    
+    return data
 
 # Selecciona el dispositiu
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -13,9 +43,6 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 tokenizer = ViTImageProcessor.from_pretrained('google/vit-base-patch16-224-in21k')
 #Serveix per processar els tokens inicials al estat final.
 model = ViTModel.from_pretrained('google/vit-base-patch16-224-in21k').to(device)
-
-url = 'https://static.zara.net/photos///2024/V/0/3/p/0208/600/620/2/w/2048/0208600620_6_1_1.jpg?ts=1700650087558'
-
 img = None
 try:
     response = requests.get(url)
@@ -28,9 +55,6 @@ encoding = tokenizer(img, return_tensors="pt")
 
 pt_outputs = model(**encoding)
 last_hidden_states = pt_outputs.last_hidden_state
-
-#print(pt_outputs)
-#print(last_hidden_states)
 
 def compute_similarity(emb_one, emb_two):
     """Computes average cosine similarity between two vectors and adjusts it to be between 0 and 1."""
@@ -47,56 +71,56 @@ def getImage(url):
         response = requests.get(url)
         img = Image.open(BytesIO(response.content)).convert("RGB")
     except Exception as e:
-        print(f"Error loading image {url1}: {e}")
+        print(f"Error loading image {url}: {e}")
     return img
 
 def getEmbedingsImage(img):
     encoding = tokenizer(img, return_tensors="pt")
     with torch.no_grad():
         pt_outputs1 = model(**encoding)
-    embeding = pt_outputs1.last_hidden_state
+    embeding = pt_outputs1.last_hidden_state[:,0]
     return embeding
 
-def compara(url1, url2):
-    img1=getImage(url1)
-    img2=getImage(url2)
+def cargarFaiss(diccOfURL):
+
+    ids = []
+    data = []
+
+    for key, value in diccOfURL.items():
+        img = getImage(value)
+        if img == None:
+            continue
+        embeding = getEmbedingsImage(img)
+        ids.append(key)
+        data.append(embeding[0])
     
-    if(img1!=None and img2!=None):
-        emb1 = getEmbedingsImage(img1)
-        emb2 = getEmbedingsImage(img2)
-        print(emb1)
-        print(compute_similarity(emb1,emb2))
+    #DATA LENGHT MUST BE GREATHER THAN 0!!!!!!!!!!!!
+    array_2d = np.array(data, dtype='float32')
+    ids = np.array(ids)
+
+    #index.add(data)
+
+    index = faiss.IndexFlatL2(array_2d.shape[1])  # L2 distance index, assuming Euclidean distance
+    index_id_map = faiss.IndexIDMap(index) #IDMap(index)
+    index_id_map.add_with_ids(array_2d, ids)
+
+    print("COMPARACIO")
+    print(diccOfURL[ids[0]])
+    print("-----------")
+
+    xq = array_2d[0]
+
+    k = 5                         # we want 4 similar vectors
+    D, I = index_id_map.search(np.expand_dims(xq, axis=0), k)     # actual search
+    print("FAISS PROXIMITIES")
+    print (I[0])
+    for url in I[0]:
+        print(diccOfURL[url])
 
 
-def fetch_similar(image, top_k=5):
-    """Fetches the `top_k` similar images with `image` as the query."""
-    # Prepare the input query image for embedding computation.
-    image_transformed = transformation_chain(image).unsqueeze(0)
-    new_batch = {"pixel_values": image_transformed.to(device)}
-
-    # Comute the embedding.
-    with torch.no_grad():
-        query_embeddings = model(**new_batch).last_hidden_state[:, 0].cpu()
-
-    # Compute similarity scores with all the candidate images at one go.
-    # We also create a mapping between the candidate image identifiers
-    # and their similarity scores with the query image.
-    sim_scores = compute_scores(all_candidate_embeddings, query_embeddings)
-    similarity_mapping = dict(zip(candidate_ids, sim_scores))
- 
-    # Sort the mapping dictionary and return `top_k` candidates.
-    similarity_mapping_sorted = dict(
-        sorted(similarity_mapping.items(), key=lambda x: x[1], reverse=True)
-    )
-    id_entries = list(similarity_mapping_sorted.keys())[:top_k]
-
-    ids = list(map(lambda x: int(x.split("_")[0]), id_entries))
-
-    return ids, label
 
 
-url1 = 'https://static.zara.net/photos///2024/V/0/2/p/0679/416/251/2/w/2048/0679416251_6_2_1.jpg?ts=1714473877883'
-url2 = 'https://static.zara.net/photos///2024/V/0/2/p/0679/416/251/2/w/2048/0679416251_3_1_1.jpg?ts=1714473877592'
-url3 = 'https://static.zara.net/photos///2024/V/0/1/p/4786/055/802/2/w/2048/4786055802_3_1_1.jpg?ts=1712743908341'
 
-compara(url1,url3)
+
+setID = getDataURL("python/inditex_nou.csv", 3, 20)
+cargarFaiss(setID)
