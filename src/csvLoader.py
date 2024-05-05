@@ -26,28 +26,33 @@ class URLProcessor:
                 writer.writerow(row_sense_buides)
 
     @staticmethod
-    def get_data_url(csv_path, start_column, num_urls):
-        df = pd.read_csv(csv_path)
+    #get the data of the URL from the csv with path 'csvPath', including the URL itself the identification and the column of the url in the csv
+    def getDataURL(csvPath, startColumn, numURLs):
+        urlsCount = 0
+        df = pd.read_csv(csvPath)
         data = {}
-        urls_count = 0
 
         for i in range(len(df)):
-            if i < start_column:
+            if i < startColumn:
                 continue
             for j in range(len(df.columns)):
-                if urls_count >= num_urls:
+                if (urlsCount > numURLs):
                     break
-                url = str(df.iloc[i, j])
+                url = f"{df.iloc[i, j]}"
                 if url == "":
                     continue
                 else:
-                    urls_count += 1
-                    data[i] = [i, url]
+                    urlsCount += 1
+
+                    row = url
+                    if i in data:
+                        print("ERROR")
+                    data[i] = row
                     break
+        
         return data
 
-# Example usage:
-
-URLProcessor.eliminar_urls_repetits('inditex.csv', 'inditex_nou.csv')
-data = URLProcessor.get_data_url('inditex_nou.csv', 2, 50)
-print(data)
+    #@staticmethod
+    #get the data of the URL from the csv with path 'csvPath', including the URL itself the identification and the column of the url in the csv
+    #def createCSV(csvPath, csv):
+        
