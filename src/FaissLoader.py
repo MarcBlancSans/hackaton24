@@ -33,5 +33,5 @@ class FaissLoader:
         print("FAISS PROXIMITIES")
         setURLs = []
         for url in I[0]:
-            setURLs = dicc_of_url[url]
+            setURLs.append(dicc_of_url[url])
         return setURLs
